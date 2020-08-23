@@ -7,8 +7,6 @@
 dichotomous(
   data,
   vars,
-  group,
-  itotal = TRUE,
   prop = TRUE,
   imeasure = FALSE,
   ise = FALSE,
@@ -18,7 +16,6 @@ dichotomous(
   modelfit = FALSE,
   modelfitp = FALSE,
   mat = FALSE,
-  raju = FALSE,
   wrightmap = FALSE,
   esc = FALSE
 )
@@ -27,10 +24,6 @@ dichotomous(
 \item{data}{The data as a data frame.}
 
 \item{vars}{.}
-
-\item{group}{.}
-
-\item{itotal}{.}
 
 \item{prop}{.}
 
@@ -50,8 +43,6 @@ dichotomous(
 
 \item{mat}{.}
 
-\item{raju}{.}
-
 \item{wrightmap}{.}
 
 \item{esc}{.}
@@ -63,10 +54,8 @@ A results object containing:
   \code{results$scale} \tab \tab \tab \tab \tab a table \cr
   \code{results$mat} \tab \tab \tab \tab \tab a table \cr
   \code{results$items} \tab \tab \tab \tab \tab a table \cr
-  \code{results$raju} \tab \tab \tab \tab \tab a table \cr
   \code{results$plot} \tab \tab \tab \tab \tab an image \cr
   \code{results$esc} \tab \tab \tab \tab \tab an array of plots \cr
-  \code{results$text} \tab \tab \tab \tab \tab a preformatted \cr
 }
 
 Tables can be converted to data frames with \code{asDF} or \code{\link{as.data.frame}}. For example:

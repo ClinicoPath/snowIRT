@@ -2,10 +2,6 @@
 # Dichotomous Rasch model
 #' @importFrom R6 R6Class
 #' @import jmvcore
-#' @import ltm
-#' @import difR
-#' @importFrom TAM tam.jml
-#' @importFrom TAM tam.jml.fit
 #' @importFrom TAM tam.fit
 #' @importFrom TAM tam.mml
 #' @importFrom TAM tam.modelfit
@@ -40,8 +36,8 @@ dichotomousClass <- if (requireNamespace('jmvcore'))
 
             <p>- Each variable must be <b>coded as 0 or 1 with the type of numeric-continuous</b> in jamovi.</p>
             <p>- Just highlight the variables and click the arrow to move it across into the 'Variables' box.</p>
-            <p>- The result tables are estimated by Joint Maximum Likelihood(JML) estimation.</p>
-            <p>- MADaQ3 statistic(an effect size of model fit) is estimated based on Marginal Maximum Likelihood(MML) estimation.</P>
+            
+            <p>- The result tables are estimated by Marginal Maximum Likelihood estimation(MMLE) using TAM package.</p>
             <p>- The rationale of snowIRT module is described in the <a href='https://bookdown.org/dkatz/Rasch_Biome/' target = '_blank'>documentation</a></p>
             <p>- Feature requests and bug reports can be made on my <a href='https://github.com/hyunsooseol/snowIRT/'  target = '_blank'>GitHub</a></p>
 
@@ -75,13 +71,13 @@ adjustment; Ho= the data fit the Rasch model."
       
       #======================================++++++++++++++++++++++
       .run = function() {
-        # 
-        # for (varName in self$options$vars) {
-        #   var <- self$data[[varName]]
-        #   if (any(var < 0) | any(var >= 2))
-        #     stop('The dichotomous model requires dichotomos items(values 0 and 1)')
-        # }
-        # 
+
+        for (varName in self$options$vars) {
+          var <- self$data[[varName]]
+          if (any(var < 0) | any(var >= 2))
+            stop('The dichotomous model requires dichotomos items(values 0 and 1)')
+        }
+
         
         # get variables-------
         
@@ -89,13 +85,6 @@ adjustment; Ho= the data fit the Rasch model."
         
         vars <- self$options$vars
         
-        groupName<- self$options$group
-
-        # groupLevels <- base::levels(data[[groupName]])
-        # 
-        # if (length(groupLevels) != 2)
-        #   jmvcore::reject("Grouping variable '{a}' must have exactly 2 levels", code="grouping_var_must_have_2_levels", a=groupName)
-
         
         # Ready--------
         
@@ -107,6 +96,7 @@ adjustment; Ho= the data fit the Rasch model."
           ready <- FALSE
         
         if (ready) {
+          
           data <- private$.cleanData()
           
           results <- private$.compute(data)
@@ -122,11 +112,6 @@ adjustment; Ho= the data fit the Rasch model."
           # Populate q3 matrix table-----
           
           private$.populateMatrixTable(results)
-          
-          # populate dif table-----------
-          
-          
-          private$.populateRajuTable(results)
           
           
           # prepare plot-----
@@ -151,108 +136,60 @@ adjustment; Ho= the data fit the Rasch model."
         
         vars <- self$options$vars
         
-        groupName<- self$options$group
-       
-       
-        # estimate the Rasch model with JML using function 'tam.jml'-----
+      
+        # estimate the Rasch model with MMLE-----
         
-        tamobj = TAM::tam.jml(resp = as.matrix(data))
+        tamobj = TAM::tam.mml(resp = as.matrix(data))
         
+        # computing item mean
         
-        # estimate Item Total Score(Sufficient Statistics)-------
+        prop <- tamobj$item$M
         
-        itotal <- tamobj$ItemScore
-        itotal <- -itotal
-        
-        # computing proportions for each item---------
-        
-        n <- tamobj$nstud
-        prop <- itotal / n
         
         # estimate item difficulty measure---------------
         
-        imeasure <-  tamobj$xsi
+        imeasure <-tamobj$xsi$xsi
         
         
         # estimate standard error of the item parameter-----
         
-        ise <- tamobj$errorP
+        ise <- tamobj$xsi$se.xsi
         
         
         # computing infit and outfit statistics---------------------
         
         fit <- TAM::tam.fit(tamobj)
         
-        infit <- fit$fit.item$infitItem
+        infit <- fit$itemfit$Infit
         
-        outfit <- fit$fit.item$outfitItem
+        outfit <- fit$itemfit$Outfit
         
         
         # computing person separation reliability-------
         
-        reliability <- tamobj$WLEreliability
+        abil<- tam.wle(tamobj)
+        
+        reliability<- abil$WLE.rel
         
         #computing an effect size of model fit(MADaQ3) using MML-------
         
-        tamobj1 = TAM::tam.mml(resp = as.matrix(data))
+       # assess model fit----
         
-        # assess model fit----
+        model <- TAM::tam.modelfit(tamobj)
         
-        res <- TAM::tam.modelfit(tamobj = tamobj1)
-        
-        modelfit <- res$stat.MADaQ3$MADaQ3
+        modelfit <- model$stat.MADaQ3$MADaQ3
         
         # pvalue--------
         
-        modelfitp <- res$stat.MADaQ3$p
+        modelfitp <- model$stat.MADaQ3$p
         
         # q3 matrix----------
         
-        mat <- res$Q3.matr
+        mat <- model$Q3.matr
         
-       
-        
-        ### get difRaju------------
-        
-        
-        res1 <- difR::difRaju(data, group = "groupName", focal.name = 1,
-                              model = "1PL",
-                              p.adjust.method = "BH")
-        
-       
-        #dif result---------
-        
-        zstat<-as.vector(res1$RajuZ)
-       
-        pvalue <- as.vector(res1$adjusted.p)
-        
-        
-        # get ETS result--------
-        
-        itk <- 1:length(res1$RajuZ)
-        pars <- res1$itemParInit
-        J <- nrow(pars)/2
-        mR <- pars[1:J, 1]
-        mF <- itemRescale(pars[1:J, ], pars[(J + 1):(2 * J),])[, 1]
-        
-       
-        rr1 <- mF - mR
-        rr2<- -2.35 * rr1
-        
-        symb1 <- symnum(abs(rr2), c(0, 1, 1.5, Inf), 
-                        symbols = c("A", "B", "C"))
-        
-        #get result------                                                                                                                   
-        
-        diff <- as.vector(rr1)
-        delta <- as.vector(rr2)
-        es <- as.vector(symb1)
-       
-       
-        
+      
         results <-
           list(
-            'itotal' = itotal,
             'prop' = prop,
             'imeasure' = imeasure,
             'ise' = ise,
@@ -261,24 +198,11 @@ adjustment; Ho= the data fit the Rasch model."
             'reliability' = reliability,
             'modelfit' = modelfit,
             'modelfitp' = modelfitp,
-            'mat' = mat,
-            'zstat'=zstat,
-            'pvalue'=pvalue,
-            'diff'=diff,
-            'delta'=delta,
-            'es'=es
+            'mat' = mat
+          
             )
       
-        
-        # if(self$options$group){
-        # 
-        # results$zstat <- zstat
-        # results$pvaue <- pvalue
-        # results$diff <- diff
-        # results$delta <- delta
-        # results$es <- es
-        # 
-        # }
+       
           
       },
       
@@ -287,7 +211,8 @@ adjustment; Ho= the data fit the Rasch model."
       #### Init. tables ====================================================
       
       .initItemsTable = function() {
-        table <- self$results$items
+        
+       table <- self$results$items
         
         for (i in seq_along(items))
           table$addFootnote(rowKey = items[i], 'name')
@@ -297,6 +222,8 @@ adjustment; Ho= the data fit the Rasch model."
       # populate scale table-------------------
       
       .populateScaleTable = function(results) {
+        
+       
         table <- self$results$scale
         
         reliability <- results$reliability
@@ -306,7 +233,7 @@ adjustment; Ho= the data fit the Rasch model."
         
         row <- list()
         
-        row[['reliability']] <- reliability
+        row[['reliability']] <- reliability[1]
         row[['modelfit']] <- modelfit
         row[['modelfitp']] <- modelfitp
         
@@ -319,6 +246,8 @@ adjustment; Ho= the data fit the Rasch model."
       # Populate q3 matrix table-----
       
       .populateMatrixTable = function(results) {
+        
+        
         # get variables---------------------------------
         
         matrix <- self$results$get('mat')
@@ -380,7 +309,7 @@ adjustment; Ho= the data fit the Rasch model."
         
       },
       
-      # populate item tables==============================================
+      # populate item table==============================================
       
       .populateItemsTable = function(results) {
         
@@ -389,7 +318,6 @@ adjustment; Ho= the data fit the Rasch model."
         items <- self$options$vars
         
         
-        itotal <- results$itotal
         prop <- results$prop
         
         imeasure <- results$imeasure
@@ -403,8 +331,7 @@ adjustment; Ho= the data fit the Rasch model."
           row <- list()
           
           
-          row[["total"]] <- itotal[i, 1]
-          row[["prop"]] <- prop[i, 1]
+          row[["prop"]] <- prop[i]
           
           row[["measure"]] <- imeasure[i]
           
@@ -421,48 +348,6 @@ adjustment; Ho= the data fit the Rasch model."
       },
       
   
-  # populate dif table--------------
-  
-  .populateRajuTable=function(results){
-    
-  
-     items <- self$options$vars
-     group<- self$options$group
-    
-     table <- self$results$raju
-     
-     # get result---
-     
-     zstat<- results$zstat
-     pvalue<- results$pvalue
-     diff<- results$diff
-     delta<- results$delta
-     es<- results$es
-    
-    
-     for (i in seq_along(items)) {
-      
-        row <- list()
-       
-       
-       row[["z"]] <- zstat[i]
-       row[["p"]] <- pvalue[i]
-       
-       row[["Difference"]] <- diff[i]
-       
-       row[["deltaRaju"]] <- delta[i]
-       
-       row[["Effect size"]] <- es[i]
-       
-      
-       table$setRow(rowKey = items[i], values = row)
-     }
-     
-    
-    
-    },
-      
-      
   
   #### Prepare Plot functions ----
       

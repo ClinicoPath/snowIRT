@@ -1,0 +1,52 @@
+---
+name:  dif
+title: Differential Item Functioning
+jrs:   '1.1'
+
+items:
+    - name: instructions
+      title: Instructions
+      type: Html
+      visible: True
+      refs: snowIRT
+
+    - name: raju
+      title: Raju’s area method
+      type: Table
+      visible: (raju)
+      rows: (vars)
+      clearWith:
+        - vars
+      refs: difR
+        
+      columns:
+        - name: name
+          title: ''
+          type: 'text'
+          content: ($key)
+
+        - name: zstat
+          title: z
+          
+        - name: pvalue
+          title: Adj.p
+          format: zto,pvalue
+         
+        - name: delta
+          title: deltaRaju
+          
+        - name: es
+          title: 'Effect size'
+          type: 'text'
+
+    - name: plot
+      title: 'DIF plot'
+      type: Image
+      width:  500
+      height: 500
+      renderFun: .plot
+      visible: (difplot)
+      refs: difR  
+
+
+...

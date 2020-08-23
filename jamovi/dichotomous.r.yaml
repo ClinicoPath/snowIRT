@@ -34,6 +34,7 @@ items:
 
         - name: modelfitp
           title: p
+          format: zto,pvalue
           visible: (modelfitp)
 
     - name: mat
@@ -58,7 +59,7 @@ items:
     - name: items
       title: Item Statistics
       type: Table
-      visible: (itotal || prop || imeasure || ise || infit || outfit)
+      visible: (prop || imeasure || ise || infit || outfit)
       rows: (vars)
       clearWith:
         - vars
@@ -69,10 +70,6 @@ items:
           title: ''
           type: 'text'
           content: ($key)
-
-        - name: total
-          title: Total
-          visible: (itotal)
 
         - name: prop
           title: Proportion
@@ -93,38 +90,7 @@ items:
         - name: outfit
           title: Outfit 
           visible: (outfit) 
-          
-    - name: raju
-      title: Raju’s area method
-      type: Table
-      visible: (raju)
-      rows: (vars)
-      clearWith:
-        - vars
-      refs: difR
-        
-      columns:
-        - name: name
-          title: ''
-          type: 'text'
-          content: ($key)
 
-        - name: zstat
-          title: z
-          
-        - name: pvalue
-          title: p
-         
-        - name: diff
-          title: Difference
-          
-        - name: delta
-          title: deltaRaju
-          
-        - name: es
-          title: 'Effect size'
-          type: 'text'
-         
     - name: plot
       title: 'Wright Map'
       type: Image
@@ -149,9 +115,7 @@ items:
           renderFun: .escPlot
           clearWith: []         
           
-    - name:  text
-      title: res1
-      type:  Preformatted      
+ 
           
           
 ...
